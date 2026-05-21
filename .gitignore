@@ -1,0 +1,38 @@
+# Dependencias
+/vendor/
+/node_modules/
+
+# Variables de entorno — NUNCA subir esto
+.env
+.env.backup
+.env.production
+
+# Archivos de Swagger generados — se regeneran con el comando
+storage/api-docs/
+
+# Caché de Laravel
+/bootstrap/cache/*.php
+/storage/*.key
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+/coverage/
+.phpunit.result.cache
+
+# Archivos compilados
+public/hot
+public/storage
