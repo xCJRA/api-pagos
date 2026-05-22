@@ -17,13 +17,16 @@ Construida como proyecto de portafolio basado en experiencia real integrando pas
 
 El proyecto implementa el **Patrón Strategy** para desacoplar la lógica de cada pasarela:
 
+```
 POST /api/pagos
-│
-▼
-PaymentService
-│
-├──► StripeGateway      implements PaymentGatewayInterface
-└──► MercadoPagoGateway implements PaymentGatewayInterface
+      │
+      ▼
+ PaymentService
+      │
+      ├──► StripeGateway      implements PaymentGatewayInterface
+      └──► MercadoPagoGateway implements PaymentGatewayInterface
+```
+
 Esto permite agregar nuevas pasarelas (ej: PayPal, Conekta) sin modificar el Controller ni el Service existente.
 
 ## 📋 Endpoints
@@ -103,31 +106,97 @@ Authorization: Bearer {token}
 ```
 
 **Tokens de prueba de Stripe:**
+
 | Token | Resultado |
 |-------|-----------|
 | `tok_visa` | Pago aprobado |
 | `tok_chargeDeclined` | Tarjeta rechazada |
 | `tok_visa_debit` | Débito aprobado |
 
+**Cobro con MercadoPago (sandbox):**
+```json
+POST /api/pagos
+Authorization: Bearer {token}
+
+{
+    "monto": 500.00,
+    "moneda": "MXN",
+    "gateway": "mercadopago",
+    "descripcion": "Suscripción mensual",
+    "token_tarjeta": "TOKEN_GENERADO_POR_MP_JS",
+    "email_pagador": "test_user@test.com",
+    "payment_method_id": "visa",
+    "cuotas": 1
+}
+```
+
+**Reembolso total:**
+```json
+POST /api/pagos/{uuid}/reembolso
+Authorization: Bearer {token}
+
+{}
+```
+
+**Reembolso parcial:**
+```json
+POST /api/pagos/{uuid}/reembolso
+Authorization: Bearer {token}
+
+{
+    "monto": 100.00
+}
+```
+
 ## 📁 Estructura relevante
+
+```
 app/
 ├── Contracts/
 │   └── PaymentGatewayInterface.php   # Contrato que ambas pasarelas implementan
 ├── Services/
-│   ├── PaymentService.php            # Resuelve qué gateway usar
+│   ├── PaymentService.php            # Resuelve qué gateway usar (Patrón Strategy)
 │   ├── StripeGateway.php             # Implementación Stripe
 │   └── MercadoPagoGateway.php        # Implementación MercadoPago
 ├── Http/
 │   ├── Controllers/
-│   │   ├── PagoController.php
-│   │   └── WebhookController.php
+│   │   ├── PagoController.php        # Cobros, consultas y reembolsos
+│   │   └── WebhookController.php     # Notificaciones de las pasarelas
 │   └── Requests/
-│       ├── StorePagoRequest.php
-│       └── StoreReembolsoRequest.php
+│       ├── StorePagoRequest.php      # Validación del cobro
+│       └── StoreReembolsoRequest.php # Validación del reembolso
 └── Models/
-├── Pago.php
-└── TransaccionLog.php
+    ├── Pago.php                      # Registro principal de cada transacción
+    └── TransaccionLog.php            # Auditoría de eventos por pago
+```
+
+## 🗄️ Base de datos
+
+**Tabla `pagos`**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| uuid | string | Folio único expuesto al cliente |
+| monto | decimal | Importe del cobro |
+| moneda | string | Código ISO 4217 (MXN, USD) |
+| gateway | enum | stripe \| mercadopago |
+| estado | enum | pendiente \| completado \| fallido \| reembolsado |
+| referencia_externa | string | ID del cobro en la pasarela |
+| metadata | json | Respuesta completa de la pasarela |
+
+**Tabla `transacciones_log`**
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| pago_id | foreignId | Relación con `pagos` |
+| accion | string | charge \| refund \| webhook_received |
+| resultado | enum | exito \| error |
+| mensaje | text | Descripción del resultado |
+| payload | json | Datos enviados a la pasarela |
+| respuesta | json | Respuesta recibida de la pasarela |
+
 ## 👨‍💻 Autor
 
-**César Reyes** — Backend Developer  
-[LinkedIn](https://linkedin.com/in/tu-perfil) · [GitHub](https://github.com/xCJRA)
+**César José Reyes Alonso** — Backend Developer  
+📧 cesarjreyesa1@gmail.com  
+[GitHub](https://github.com/xCJRA)
