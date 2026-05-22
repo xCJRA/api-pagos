@@ -21,6 +21,7 @@ class TransaccionLog extends Model
         'respuesta' => 'array',
     ];
 
+    protected $table = "transacciones_log";
     // Relación inversa: un log pertenece a un pago
     public function pago(): BelongsTo
     {
