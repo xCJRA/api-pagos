@@ -107,6 +107,7 @@ class PagoController extends Controller
         return response()->json([
             'exito'   => $resultado['exito'],
             'mensaje' => $resultado['mensaje'],
+            //'detalle' => $resultado['respuesta_raw'], // solo para depuración
             'pago'    => [
                 'uuid'               => $pago->uuid,
                 'monto'              => $pago->monto,

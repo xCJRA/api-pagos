@@ -41,14 +41,24 @@ class MercadoPagoGateway implements PaymentGatewayInterface
                 'mensaje'            => $exitoso
                     ? 'Pago procesado correctamente'
                     : 'Pago rechazado: ' . $pago->status_detail,
-                'respuesta_raw'      => (array) $pago,
+                'respuesta_raw'      => json_decode(json_encode($pago), true), // conversión limpia
             ];
-        } catch (MPApiException $e) {
+         } catch (MPApiException $e) {
+
+            $apiResponse = $e->getApiResponse();
+            $detalle = [];
+
+            if ($apiResponse) {
+                $contenido = $apiResponse->getContent();
+                // getContent() puede devolver string o array según la versión del SDK
+                $detalle = is_array($contenido) ? $contenido : json_decode($contenido, true);
+            }
+
             return [
                 'exito'              => false,
                 'referencia_externa' => null,
                 'mensaje'            => $e->getMessage(),
-                'respuesta_raw'      => [],
+                'respuesta_raw'      => $detalle,
             ];
         }
     }
@@ -67,10 +77,21 @@ class MercadoPagoGateway implements PaymentGatewayInterface
                 'respuesta_raw' => (array) $reembolso,
             ];
         } catch (Exception $e) {
+
+            $apiResponse = $e->getApiResponse();
+            $detalle = [];
+
+            if ($apiResponse) {
+                $contenido = $apiResponse->getContent();
+                // getContent() puede devolver string o array según la versión del SDK
+                $detalle = is_array($contenido) ? $contenido : json_decode($contenido, true);
+            }
+
             return [
-                'exito'         => false,
-                'mensaje'       => $e->getMessage(),
-                'respuesta_raw' => [],
+                'exito'              => false,
+                'referencia_externa' => null,
+                'mensaje'            => $e->getMessage(),
+                'respuesta_raw'      => $detalle,
             ];
         }
     }
