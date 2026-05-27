@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Contracts\PaymentGatewayInterface;
 use MercadoPago\Client\Payment\PaymentClient;
-use MercadoPago\Client\PaymentMethod\PaymentMethodClient;
+use MercadoPago\Client\Payment\PaymentRefundClient; // agregar esta línea
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Exceptions\MPApiException;
 use Exception;
@@ -66,32 +66,47 @@ class MercadoPagoGateway implements PaymentGatewayInterface
     public function refund(string $referenciaExterna, ?float $monto = null): array
     {
         try {
-            // MercadoPago usa un endpoint diferente para reembolsos parciales vs totales
-            $params = $monto !== null ? ['amount' => $monto] : [];
+            // MercadoPago usa un cliente separado para reembolsos
+            $refundClient = new PaymentRefundClient();
 
-            $reembolso = $this->client->refund((int) $referenciaExterna, $params);
+            $params = [];
+
+            // Si se especifica monto es reembolso parcial, si no es total
+            if ($monto !== null) {
+                $params['amount'] = $monto;
+            }
+
+            // Si viene monto es reembolso parcial, si no es total
+            if ($monto !== null) {
+                $reembolso = $refundClient->refund((int) $referenciaExterna, $monto);
+            } else {
+                $reembolso = $refundClient->refundTotal((int) $referenciaExterna);
+            }
 
             return [
                 'exito'         => true,
                 'mensaje'       => 'Reembolso procesado correctamente',
-                'respuesta_raw' => (array) $reembolso,
+                'respuesta_raw' => json_decode(json_encode($reembolso), true),
             ];
-        } catch (Exception $e) {
-
+        } catch (MPApiException $e) {
             $apiResponse = $e->getApiResponse();
             $detalle = [];
 
             if ($apiResponse) {
                 $contenido = $apiResponse->getContent();
-                // getContent() puede devolver string o array según la versión del SDK
                 $detalle = is_array($contenido) ? $contenido : json_decode($contenido, true);
             }
 
             return [
-                'exito'              => false,
-                'referencia_externa' => null,
-                'mensaje'            => $e->getMessage(),
-                'respuesta_raw'      => $detalle,
+                'exito'         => false,
+                'mensaje'       => $e->getMessage(),
+                'respuesta_raw' => $detalle,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'exito'         => false,
+                'mensaje'       => $e->getMessage(),
+                'respuesta_raw' => [],
             ];
         }
     }
